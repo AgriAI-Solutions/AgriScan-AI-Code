@@ -95,3 +95,32 @@ def build_model(class_names):
         metrics=["accuracy", metrics.Precision(name="precision"), metrics.Recall(name="recall")])
     model.summary()
     return model
+    
+#Function to plot training history
+def plot_training_history(history_dict, title_suffix, output_path):
+    """Generate and save accuracy/loss plots."""
+    epochs_range = range(1, len(history_dict["loss"]) + 1)
+    plt.figure(figsize=(12, 4))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, history_dict["loss"], "b-o", label="Training Loss")
+    if "val_loss" in history_dict:
+        plt.plot(epochs_range, history_dict["val_loss"], "r-o", label="Validation Loss")
+    plt.title(f"Loss Over Epochs {title_suffix}")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.grid(True)
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, history_dict["accuracy"], "b-o", label="Training Accuracy")
+    if "val_accuracy" in history_dict:
+        plt.plot(epochs_range, history_dict["val_accuracy"], "r-o", label="Validation Accuracy")
+    plt.title(f"Accuracy Over Epochs {title_suffix}")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
