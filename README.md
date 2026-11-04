@@ -212,6 +212,7 @@ Please refer to the PlantVillage dataset license for usage terms and conditions.
 ✅ **CNN Model**: Trained and evaluated
 ✅ **Prediction Interface**: Functional
 ✅ **Disease Knowledge Base**: Integrated
+⚠️ **Streamlit Web App**: Optional (not implemented in core)
 ✅ **Documentation**: Comprehensive
 
 ## Contact & Support
@@ -221,9 +222,9 @@ For questions, issues, or contributions related to AgriScan AI, please refer to 
 ---
 
 **Version**: 1.0
-**Last Updated**: 2025
+**Last Updated**: 2026
 **Repository**: AgriScan AI
 
 ---
 
-**Note**: The Project folder is too large to upload to GitHub. Please download the PlantVillage dataset separately and place it in the `dataset/` directory with `train/` and `test/` subdirectories.
+**Note**: The dataset folder is too large to upload to GitHub. Please download the PlantVillage dataset separately and place it in the `dataset/` directory with `train/` and `test/` subdirectories.
