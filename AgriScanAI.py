@@ -157,3 +157,20 @@ def evaluate_model(model, test_ds, class_names, title_suffix, output_suffix):
     with open(f"results/classification_report{output_suffix}.json", "w", encoding="utf-8") as f:
         json.dump(report_dict, f, indent=4)
     print("Classification report saved")
+
+#Function to calculate class weights
+def calculate_class_weights(train_ds, class_names):
+    """Calculate balanced class weights from training dataset labels."""
+    print("Calculating class weights from training data...")
+    y_train = np.concatenate([np.argmax(labels.numpy(), axis=1) for _, labels in train_ds])
+    
+    class_weights = compute_class_weight(class_weight='balanced', classes=np.arange(len(class_names)), y=y_train)
+    class_weight_dict = dict(enumerate(class_weights))
+    
+    print(f"Class Weight Statistics: Min: {min(class_weights):.4f}, Max: {max(class_weights):.4f}, Mean: {np.mean(class_weights):.4f}")
+    
+    for class_name in ['Apple___Apple_scab', 'Apple___Cedar_apple_rust', 'Potato___healthy', 'Raspberry___healthy', 'Orange___Haunglongbing_(Citrus_greening)']:
+        if class_name in class_names:
+            print(f"  {class_name}: {class_weights[class_names.index(class_name)]:.4f}")
+    
+    return class_weight_dict
