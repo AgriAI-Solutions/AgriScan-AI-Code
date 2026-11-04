@@ -265,3 +265,90 @@ def load_model():
         raise ValueError(f"Model output dimension ({model.output_shape[-1]}) does not match number of classes ({len(class_names)})")
     
     return model, class_names
+
+#Function to predict disease from image
+def predict_image(image_input, model=None, class_names=None):
+    """Predict disease from image (path, file object, PIL Image, or numpy array)."""
+    if model is None or class_names is None:
+        model, class_names = load_model()
+    
+    resolved_path = None
+    img_array = None
+    
+    if isinstance(image_input, str):
+        resolved_path = validate_path(image_input)
+        if not resolved_path:
+            raise FileNotFoundError(f"Image not found: {image_input}")
+        img = tf.keras.utils.load_img(resolved_path, target_size=IMAGE_SIZE, color_mode="rgb", interpolation="bilinear")
+        img_array = tf.keras.utils.img_to_array(img, dtype="float32")
+    elif hasattr(image_input, "read"):
+        pil_img = Image.open(image_input)
+        if pil_img.mode not in ["RGB", "RGBA", "L", "P"]:
+            raise ValueError(f"Unsupported image mode: {pil_img.mode}")
+        if pil_img.mode != "RGB":
+            pil_img = pil_img.convert("RGB")
+        img_array = np.array(pil_img.resize(IMAGE_SIZE, Image.Resampling.BILINEAR), dtype=np.float32)
+    elif isinstance(image_input, Image.Image):
+        if image_input.mode not in ["RGB", "RGBA", "L", "P"]:
+            raise ValueError(f"Unsupported image mode: {image_input.mode}")
+        pil_img = image_input.convert("RGB") if image_input.mode != "RGB" else image_input
+        img_array = np.array(pil_img.resize(IMAGE_SIZE, Image.Resampling.BILINEAR), dtype=np.float32)
+    elif isinstance(image_input, np.ndarray):
+        img_array = image_input.astype("float32")
+    else:
+        raise TypeError(f"Unsupported input type: {type(image_input).__name__}")
+    
+    if img_array is None or len(img_array.shape) != 3 or img_array.shape[2] not in [1, 3, 4]:
+        raise ValueError(f"Invalid image array shape: {img_array.shape if img_array is not None else 'None'}")
+    
+    if img_array.shape[2] == 1:
+        img_array = np.repeat(img_array, 3, axis=2)
+    elif img_array.shape[2] == 4:
+        img_array = img_array[:, :, :3]
+    
+    if img_array.max() > 1.0:
+        img_array = img_array / 255.0
+    
+    if img_array.min() < 0.0 or img_array.max() > 1.0:
+        raise ValueError(f"Invalid pixel range after normalization: [{img_array.min():.4f}, {img_array.max():.4f}]")
+    
+    if img_array.shape[:2] != IMAGE_SIZE:
+        pil_img = Image.fromarray((img_array * 255).astype(np.uint8))
+        img_array = np.array(pil_img.resize(IMAGE_SIZE, Image.Resampling.BILINEAR), dtype=np.float32) / 255.0
+    
+    img_array = np.expand_dims(img_array, axis=0)
+    probs = model.predict(img_array, verbose=0)[0]
+    
+    if not np.all(np.isfinite(probs)) or len(probs) != len(class_names):
+        raise ValueError("Invalid model predictions")
+    
+    top_idx = int(np.argmax(probs))
+    top_class = class_names[top_idx]
+    top_conf = float(probs[top_idx])
+    
+    sorted_idxs = np.argsort(probs)[::-1]
+    top_three = [{"RANK": i + 1, "CLASS_NAME": class_names[int(sorted_idxs[i])], 
+                  "CONFIDENCE_SCORE": float(probs[int(sorted_idxs[i])]), 
+                  "CONFIDENCE_PERCENTAGE": f"{probs[int(sorted_idxs[i])]:.2%}"} 
+                 for i in range(min(3, len(sorted_idxs)))]
+    
+    disease_info = get_disease_information(top_class)
+    
+    if top_conf >= 0.85:
+        reliability = "High confidence (probability estimate). Field verification still recommended."
+    elif top_conf >= 0.50:
+        reliability = "Moderate confidence. Inspect symptoms carefully and verify with secondary predictions."
+    else:
+        reliability = "Low confidence. Symptoms may be ambiguous or at early stage. Field confirmation strongly recommended."
+    
+    return {
+        "SUCCESS": True,
+        "IMAGE_PATH": resolved_path or "In-Memory Image",
+        "PREDICTED_CLASS": top_class,
+        "CONFIDENCE_SCORE": top_conf,
+        "CONFIDENCE_PERCENTAGE": f"{top_conf:.2%}",
+        "TOP_THREE_PREDICTIONS": top_three,
+        "DISEASE_INFORMATION": disease_info,
+        "RELIABILITY_NOTE": reliability
+    }
+
