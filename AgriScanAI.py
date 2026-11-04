@@ -425,80 +425,6 @@ def predict_cli(image_path=None):
     print("=" * 80 + "\n")
     return result
 
-
-#Function for command-line prediction interface
-def predict_cli(image_path=None):
-    """Command-line prediction interface."""
-    print("=" * 80)
-    print("AGRISCAN AI - DIAGNOSTIC INTERFACE")
-    print("=" * 80)
-    
-    if not image_path:
-        try:
-            image_path = input("Enter image path: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nPrediction cancelled")
-            return {"SUCCESS": False, "ERROR": "Prediction cancelled"}
-    
-    if not image_path:
-        print("Error: No image path provided. Usage: python AgriScanAI.py --predict \"path/to/image.jpg\"")
-        return {"SUCCESS": False, "ERROR": "No image path"}
-    
-    validated = validate_path(image_path)
-    if not validated:
-        print(f"Error: Image not found: {image_path}")
-        return {"SUCCESS": False, "ERROR": f"File not found: {image_path}"}
-    
-    print(f"\nAnalyzing: {validated}")
-    try:
-        result = predict_image(validated)
-    except Exception as e:
-        print(f"Prediction failed: {e}")
-        return {"SUCCESS": False, "ERROR": str(e)}
-    
-    if not result.get("SUCCESS"):
-        print(f"Error: {result.get('ERROR')}")
-        return result
-    
-    disease_info = result["DISEASE_INFORMATION"]
-    
-    print("\n" + "=" * 80)
-    print("RESULTS")
-    print("=" * 80)
-    print(f"Image: {result['IMAGE_PATH']}")
-    print(f"Plant: {disease_info.get('PLANT_SPECIES', 'Unknown')}")
-    print(f"Disease: {disease_info.get('DISEASE_NAME', result['PREDICTED_CLASS'])}")
-    print(f"Status: {'HEALTHY' if disease_info.get('IS_HEALTHY') else 'DISEASE DETECTED'}")
-    print(f"Confidence: {result['CONFIDENCE_PERCENTAGE']} (model probability estimate)")
-    print(f"Reliability: {result['RELIABILITY_NOTE']}")
-    
-    print("\nTop 3 Predictions:")
-    for pred in result["TOP_THREE_PREDICTIONS"]:
-        print(f"  #{pred['RANK']}: {pred['CLASS_NAME']:<35} ({pred['CONFIDENCE_PERCENTAGE']})")
-    
-    if result['CONFIDENCE_SCORE'] < 0.50:
-        print("\n" + "=" * 80)
-        print("WARNING: LOW CONFIDENCE PREDICTION")
-        print("=" * 80)
-        print("The model is uncertain about this diagnosis. The predicted disease may be incorrect.")
-        print("\nRecommendations:")
-        print("  1. Review the top 3 predictions above and consider alternative diagnoses")
-        print("  2. Inspect the leaf symptoms carefully against predicted disease patterns")
-        print("  3. Consult with a plant pathologist or agricultural extension officer")
-        print("  4. Do not apply treatments based solely on this prediction")
-        print("\nSymptoms of predicted disease for reference:")
-        print(f"  {disease_info.get('SYMPTOMS', 'Not available')}")
-    else:
-        print("\nSymptoms:")
-        print(f"  {disease_info.get('SYMPTOMS', 'Not available')}")
-        print("\nPrevention:")
-        print(f"  {disease_info.get('PREVENTION', 'Not available')}")
-        print("\nRecommended Actions:")
-        print(f"  {disease_info.get('NEXT_STEPS', 'Not available')}")
-    
-    print("=" * 80 + "\n")
-    return result
-
 #Main function
 def main():
     parser = argparse.ArgumentParser(description="AgriScan AI - Plant Foliar Disease Detection System")
@@ -524,4 +450,3 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-
