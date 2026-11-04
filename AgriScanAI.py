@@ -174,3 +174,50 @@ def calculate_class_weights(train_ds, class_names):
             print(f"  {class_name}: {class_weights[class_names.index(class_name)]:.4f}")
     
     return class_weight_dict
+    
+#Function to train model with class weights
+def train_model_with_class_weights(epochs=6):
+    """Train model with class weights to handle imbalance."""
+    if not isinstance(epochs, int) or epochs <= 0:
+        raise ValueError(f"Epochs must be a positive integer, got: {epochs}")
+    
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
+    
+    train_ds, val_ds, test_ds, class_names = load_datasets()
+    model = build_model(class_names)
+    class_weight_dict = calculate_class_weights(train_ds, class_names)
+    
+    with open("models/class_names_class_weighted.json", "w", encoding="utf-8") as f:
+        json.dump(class_names, f, indent=4)
+    
+    with open("results/class_weights.json", "w", encoding="utf-8") as f:
+        json.dump({str(k): float(v) for k, v in class_weight_dict.items()}, f, indent=4)
+    
+    callbacks = [
+        EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True, verbose=1),
+        ModelCheckpoint(filepath="models/class_weighted_model.keras", monitor="val_accuracy", save_best_only=True, verbose=1),
+        ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=2, min_lr=1e-5, verbose=1)
+    ]
+    
+    print(f"\nTraining with class weights for {epochs} epochs...")
+    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, class_weight=class_weight_dict, callbacks=callbacks, verbose=1)
+    
+    hist_dict = {k: [float(v) for v in vals] for k, vals in history.history.items()}
+    with open("results/training_history_class_weighted.json", "w", encoding="utf-8") as f:
+        json.dump(hist_dict, f, indent=4)
+    
+    plot_training_history(hist_dict, "(Class Weighted)", "results/accuracy_loss_curves_class_weighted.png")
+    
+    checkpoint_path = "models/class_weighted_model.keras"
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(f"Training completed but checkpoint not found at {checkpoint_path}")
+    
+    model = tf.keras.models.load_model(checkpoint_path)
+    print("Loaded best class-weighted model checkpoint for evaluation")
+    
+    if model.output_shape[-1] != len(class_names):
+        raise ValueError(f"Model output dimension ({model.output_shape[-1]}) does not match number of classes ({len(class_names)})")
+    
+    evaluate_model(model, test_ds, class_names, "(Class Weighted)", "_class_weighted")
+    return True
