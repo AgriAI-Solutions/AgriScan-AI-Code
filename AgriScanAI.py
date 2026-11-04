@@ -221,3 +221,20 @@ def train_model_with_class_weights(epochs=6):
     
     evaluate_model(model, test_ds, class_names, "(Class Weighted)", "_class_weighted")
     return True
+    
+#Function to validate file path
+def validate_path(path):
+    """Validate and resolve file path. Returns absolute path or None."""
+    if not path or not isinstance(path, str):
+        return None
+    path = path.strip().strip('"\'')
+    if not path:
+        return None
+    path = os.path.expanduser(os.path.normpath(path))
+    if os.path.isfile(path):
+        return os.path.abspath(path)
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    rel_path = os.path.join(project_root, path)
+    if os.path.isfile(rel_path):
+        return os.path.abspath(rel_path)
+    return None
