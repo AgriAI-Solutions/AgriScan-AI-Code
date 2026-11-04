@@ -498,3 +498,26 @@ def predict_cli(image_path=None):
     
     print("=" * 80 + "\n")
     return result
+
+#Main function
+def main():
+    parser = argparse.ArgumentParser(description="AgriScan AI - Plant Foliar Disease Detection System")
+    parser.add_argument("--train-class-weighted", action="store_true", help="Train model with class weights")
+    parser.add_argument("--predict", nargs="?", const="__INTERACTIVE__", default=None, metavar="IMAGE_PATH", help="Predict disease from image")
+    parser.add_argument("--epochs", type=int, default=6, help="Training epochs (default: 6)")
+    args = parser.parse_args()
+
+    if args.train_class_weighted:
+        try:
+            train_model_with_class_weights(args.epochs)
+            print("\nClass-weighted training completed successfully!")
+        except Exception as e:
+            print(f"\nClass-weighted training failed: {e}")
+            return 1
+    elif args.predict is not None:
+        predict_cli() if args.predict == "__INTERACTIVE__" else predict_cli(args.predict)
+    else:
+        parser.print_help()
+    
+    return 0
+
