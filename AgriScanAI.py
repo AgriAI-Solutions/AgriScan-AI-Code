@@ -124,3 +124,36 @@ def plot_training_history(history_dict, title_suffix, output_path):
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
+
+
+#Function to evaluate the model
+def evaluate_model(model, test_ds, class_names, title_suffix, output_suffix):
+    """Evaluate model, generate confusion matrix and classification report."""
+    loss, acc, prec, rec = model.evaluate(test_ds, verbose=1)[:4]
+    print(f"Test - Loss: {loss:.4f}, Acc: {acc:.4f}, Prec: {prec:.4f}, Rec: {rec:.4f}")
+    
+    predictions = model.predict(test_ds, verbose=1)
+    if not np.all(np.isfinite(predictions)):
+        raise ValueError("Model predictions contain non-finite values (NaN or Inf)")
+    
+    y_pred = np.argmax(predictions, axis=1)
+    y_true = np.concatenate([np.argmax(labels.numpy(), axis=1) for _, labels in test_ds])
+    
+    cm = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(cm, display_labels=class_names)
+    fig, ax = plt.subplots(figsize=(16, 14))
+    disp.plot(ax=ax, cmap="Blues", values_format="d", xticks_rotation=90)
+    plt.title(f"AgriScan AI - 38 Class Plant Disease Confusion Matrix {title_suffix}")
+    plt.tight_layout()
+    plt.savefig(f"results/confusion_matrix{output_suffix}.png", dpi=300)
+    plt.close(fig)
+    print("Confusion matrix saved")
+    
+    report = classification_report(y_true, y_pred, target_names=class_names, digits=4, zero_division=0)
+    print(f"\nClassification Report {title_suffix}:")
+    print(report)
+    
+    report_dict = classification_report(y_true, y_pred, target_names=class_names, digits=4, output_dict=True, zero_division=0)
+    with open(f"results/classification_report{output_suffix}.json", "w", encoding="utf-8") as f:
+        json.dump(report_dict, f, indent=4)
+    print("Classification report saved")
