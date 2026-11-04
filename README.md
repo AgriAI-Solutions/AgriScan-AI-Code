@@ -212,7 +212,6 @@ Please refer to the PlantVillage dataset license for usage terms and conditions.
 ✅ **CNN Model**: Trained and evaluated
 ✅ **Prediction Interface**: Functional
 ✅ **Disease Knowledge Base**: Integrated
-⚠️ **Streamlit Web App**: Optional (not implemented in core)
 ✅ **Documentation**: Comprehensive
 
 ## Contact & Support
