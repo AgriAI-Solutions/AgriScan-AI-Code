@@ -238,3 +238,30 @@ def validate_path(path):
     if os.path.isfile(rel_path):
         return os.path.abspath(rel_path)
     return None
+
+
+#Function to load the trained model
+def load_model():
+    """Load class-weighted model and class names with validation."""
+    models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
+    model_path = os.path.join(models_dir, "class_weighted_model.keras")
+    class_path = os.path.join(models_dir, "class_names_class_weighted.json")
+    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Class-weighted model not found: {model_path}\nRun training first with: python AgriScanAI.py --train-class-weighted")
+    if not os.path.exists(class_path):
+        raise FileNotFoundError(f"Class-weighted class names not found: {class_path}\nRun training first with: python AgriScanAI.py --train-class-weighted")
+    
+    print("Loading class-weighted model (improved performance for minority classes).")
+    
+    with open(class_path, "r", encoding="utf-8") as f:
+        class_names = json.load(f)
+    
+    if not isinstance(class_names, list) or len(class_names) == 0 or len(class_names) != len(set(class_names)):
+        raise ValueError("Invalid or duplicate class names in JSON")
+    
+    model = tf.keras.models.load_model(model_path)
+    if model.output_shape[-1] != len(class_names):
+        raise ValueError(f"Model output dimension ({model.output_shape[-1]}) does not match number of classes ({len(class_names)})")
+    
+    return model, class_names
