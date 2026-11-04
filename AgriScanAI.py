@@ -71,3 +71,27 @@ def load_datasets():
     test_ds = test_ds.map(lambda x, y: (rescale(x), y), num_parallel_calls=AUTOTUNE).prefetch(AUTOTUNE)
     
     return train_ds, val_ds, test_ds, class_names
+    
+    #Function to build the CNN model
+def build_model(class_names):
+    """Build and compile CNN model."""
+    model = Sequential(name="agriscan_cnn")
+    model.add(layers.Input(shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 3)))
+    
+    filters = 32
+    for _ in range(3):
+        model.add(Conv2D(filters, (3, 3), padding="same", activation="relu"))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        filters *= 2
+    model.add(Conv2D(filters, (3, 3), padding="same", activation="relu"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    
+    model.add(Flatten())
+    model.add(Dense(256, activation="relu"))
+    model.add(Dropout(0.5))
+    model.add(Dense(len(class_names), activation="softmax"))
+    
+    model.compile(optimizer=Adam(learning_rate=0.001), loss="categorical_crossentropy",
+        metrics=["accuracy", metrics.Precision(name="precision"), metrics.Recall(name="recall")])
+    model.summary()
+    return model
